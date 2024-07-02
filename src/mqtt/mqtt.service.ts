@@ -4,6 +4,7 @@ import * as mqtt from 'mqtt';
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
   private client: mqtt.MqttClient;
+  private messages: { topic: string; message: string }[] = [];
 
   onModuleInit() {
     this.client = mqtt.connect('mqtt://m15.cloudmqtt.com', {
@@ -21,7 +22,9 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.client.on('message', (topic, message) => {
-      console.log(`Received message on topic ${topic}: ${message.toString()}`);
+      const msg = message.toString();
+      this.messages.push({ topic, message: msg });
+      console.log(`Received message on topic ${topic}: ${msg}`);
     });
   }
 
@@ -32,18 +35,28 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   }
 
   subscribe(topic: string) {
-    this.client.subscribe(topic, (err) => {
+    this.client.subscribe(topic, (err, granted) => {
       if (err) {
         console.error(`Failed to subscribe to topic ${topic}:`, err);
+      } else {
+        console.log(`Subscribed to topic: ${topic}`);
+        console.log(`Granted subscriptions: ${JSON.stringify(granted)}`);
       }
     });
   }
 
   publish(topic: string, message: string) {
+    console.log(`Publishing message to topic ${topic}: ${message}`);
     this.client.publish(topic, message, (err) => {
       if (err) {
         console.error(`Failed to publish message to topic ${topic}:`, err);
+      } else {
+        console.log(`Message published to topic ${topic}: ${message}`);
       }
     });
+  }
+
+  getMessages() {
+    return this.messages;
   }
 }
